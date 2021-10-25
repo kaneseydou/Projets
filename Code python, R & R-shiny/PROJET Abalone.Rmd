@@ -1,0 +1,731 @@
+---
+title: "PROJET (Abalone)"
+author: "KANE SEYDOU"
+output: html_document
+  number_sectons: true
+  pdf_document: default
+  word_document: default
+---
+
+
+#Présentation
+
+L'ormeau (abalone) est un escargot marin, un coquillage considéré comme un délicat dans de nombreuses régions du monde. Une excellente source de fer et d'acide pantothénique, et une ressource alimentaire nutritive et agricole en Australie, en Amérique et en Asie de l'Est. 100 grammes d'ormeau donnent plus de 20% de l'apport quotidien recommandé de ces nutriments. La valeur économique de l'ormeau est corrélée positivement avec son âge. Par conséquent, il est important pour les agriculteurs et les clients de déterminer avec précision l'âge de l'ormeau pour déterminer son prix. Cependant, la technologie actuelle pour décider de l'âge est assez coûteuse et inefficace. Les agriculteurs coupent généralement les coquilles et comptent les anneaux à l'aide de microscopes pour estimer l'âge des ormeaux. Il est donc difficile de dire l'âge des ormeaux, principalement parce que leur taille dépend non seulement de leur âge, mais aussi de la disponibilité de la nourriture. De plus, les ormeaux forment parfois des populations dites «rabougries» dont les caractéristiques de croissance sont très différentes des autres populations d'ormeaux. Cette méthode complexe augmente le coût et limite sa popularité. Notre objectif dans ce rapport est de trouver les meilleurs indicateurs pour prévoir les anneaux, puis l'âge des ormeaux.
+
+#Objectif
+
+Prédire l'âge de l'ormeau à partir de ses mesures physiques ,son âge est déterminé en coupant la coquille à travers le cône, en la colorant et en comptant le nombre d'anneaux au microscope.
+
+Description:
+Nombre total d'observations dans l'ensemble de données: 4177
+Nombre total de variables dans l'ensemble de données: 9
+Le nombre d'anneaux est la valeur à prédire en tant que valeur continue
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r}
+tab <- matrix(c("v.categorielle", "vide", "M(Male) F(Femelle) et I", " continue", "mm", "Long coquille", "Continue", "mm", "Diamètre de la coquille", "Continue", "mm", "taille", "continue", "gramme", "poids entier", "Continue", "gramme", "poids decortiqué", " Continue", "gramme", "poids viscère", "continue", "gramme", "poids de la coquille", "Continu", " ", "+1,5donne_age "), ncol = 3, nrow = 9, byrow = TRUE)
+rownames(tab) <- c("Sex", "Length", "Diameter", "Height", "Whole", "Shucked", " Viscèra", "Shell", "Anneaux")
+colnames(tab) <- c("Type", "Mesure", "Description")
+tab
+```
+
+
+##Importation des données
+
+```{r cars}
+
+abalone <- read.csv(file.choose(), header = T, sep = ",")
+head(abalone)
+```
+
+
+```{r}
+
+ summary(abalone)
+```
+
+# Effectif des differentes categories
+
+```{r}
+
+# sum(abalone$X.Sex=="M")
+# sum(abalone$X.Sex=="F")
+# sum(abalone$X.Sex=="I")
+
+table(abalone$X.Sex)
+```
+
+On constate que la catégorie Male(M) est la plus dominante , presente dans notre jeu de données
+un effectif de 1528 observations .
+Les catégories Female (F) et Infant(I) ont à peu près les memes effectifs .Elles ont respectivement 1307 et 1342 observations .Au vu de ce resultat , nous poiuvons dire que notre échantillon est plutot équilibré par rapport à la variable Sexe .
+
+# Etude de la distribution de l'age des ormeaux:
+
+Ici nous analysons la distribution de l'age des ormeaux à partir des boites à moustache , sa normalité ainsi que sa liaison avec les autres variables (nuages de points et corrélation ).
+
+
+
+```{r}
+boxplot(abalone$Rings, abalone[abalone$X.Sex == "M", ]$Rings, abalone[abalone$X.Sex == "F", ]$Rings,
+  abalone[abalone$X.Sex == "I", ]$Rings,
+  names = c("Anneaux de l'ensemble", "M", "F", "I")
+)
+
+# summary(abalone$Rings)
+# summary(abalone[abalone$X.Sex=="M",]$Rings)
+# summary(abalone[abalone$X.Sex=="F",]$Rings)
+# summary(abalone[abalone$X.Sex=="I",]$Rings)
+```
+
+
+
+EN observant notre graphique ,on met en évidence que pour l'ensemble des categories combinés la majorité de nos individus on de nombre d'anneaux comprise entre 8 et 11,et la moyenne est à peu près 10, de ce fait 75% de nos individus on leur anneaux superieur ou égale 8(1st Qu.).
+Mais pour qu'on soit encore plus precis regardons les boxplots pour chaque categorie:
+On constate que les boxplots des categories M,F et I montrent que la majorité des individus ont leur anneaux comprisent respectivement entre 9 et 12 ,9 et 12 ,6 et 9 ,sur ceux  l'anneau de 75% de la categorie M et F sont superieur ou egale à 9,et pour la categorie I superieur ou egale à 6 .on remarque aussi la presence de points aberrants sur l ensemble et sur chaque cathegorie.de plus la majorité des points aberrants se trouve au dessus du maximum de chaque boxplot.
+On peut remarqué de tout cela que les distributions des  deux categories M et F semble simulaire mais differentes de celle de la categorie I.
+
+
+
+```{r}
+par(mfrow = c(2, 2))
+Rings_st <- ((abalone$Rings - mean(abalone$Rings)) / sd(abalone$Rings))
+Rings_st_M <- (abalone[abalone$X.Sex == "M", ]$Rings - mean(abalone[abalone$X.Sex == "M", ]$Rings)) / sd(abalone[abalone$X.Sex == "M", ]$Rings)
+Rings_st_F <- (abalone[abalone$X.Sex == "F", ]$Rings - mean(abalone[abalone$X.Sex == "F", ]$Rings)) / sd(abalone[abalone$X.Sex == "F", ]$Rings)
+Rings_st_I <- (abalone[abalone$X.Sex == "I", ]$Rings - mean(abalone[abalone$X.Sex == "I", ]$Rings)) / sd(abalone[abalone$X.Sex == "I", ]$Rings)
+
+
+qqnorm(Rings_st, main = "figure 0")
+abline(0, 1, col = 2)
+qqnorm(Rings_st_M, main = "figure 1")
+abline(0, 1, col = 2)
+qqnorm(Rings_st_F, main = "figure 2")
+abline(0, 1, col = 2)
+qqnorm(Rings_st_I, main = "figure 3")
+abline(0, 1, col = 2)
+```
+
+Pour la normalité ,d'après le graphe ci-dessus , on voit que les points ne s'alignent pas sur la premiere bissectrice, donc la variable "Rings" de l'ensemble et chaque categorie(M,F,I) ne suit pas une loi normale.
+
+ 
+
+
+##Corrélation
+
+Analyse de la corrélation entre nos variables:
+
+```{r}
+pairs(abalone)
+```
+
+
+D'apres les graphes ci dessus, on constate qu il y a une très bonne corrélation entre la longueur et le diametre, le whole et le shucked,le shucked ET le viscera, viscera ET shell .
+Par contre notre variable a predire est Rings (bandeaux) ,on observe que y a beaucoup plus de correlation entre Rings ET Shell que les autres ET qui est aussi bone donc cela nous servira pour mieux faire notre regression lineaire simple. et pour plus de precision on calcul la valeur de la corrélation entre notre variable a prédire et les autres.
+
+On regarde la corrélation entre notre variable a predire(Rings) et les autres. 
+
+```{r}
+cor(abalone$Rings, abalone$Length)
+cor(abalone$Rings, abalone$Diam)
+cor(abalone$Rings, abalone$Height)
+cor(abalone$Rings, abalone$Whole)
+cor(abalone$Rings, abalone$Shucked)
+cor(abalone$Rings, abalone$Viscera)
+cor(abalone$Rings, abalone$Shell)
+```
+
+
+on voit que la corrélation entre notre variable de prédiction et des autres variables sont tous positives et superieure ou égale à 0.4208837 et majorée par 0.627574.
+donc dans tous les cas , on a une  bonne correlation.on choisit donc la plus grande corrélation pour faire notre regression lineaire simple.
+
+# Régression lineaire simple:
+
+il est possible de faire une regression lineaire simple entre Rings et le reste de nos variables mais on a choisit la variable Shell(qui a plus de corrélation) pour la suite. 
+
+```{r}
+
+reg.s <- lm(Rings ~ Shell, data = abalone)
+sans.intercept <- lm(Rings ~ Shell - 1, data = abalone)
+plot(abalone$Shell, abalone$Rings, pch = 4, xlab = "shellWeight", ylab = "Rings", main = "Donnees")
+abline(coef(reg.s), col = "blue")
+abline(0, coef(sans.intercept), lty = 2)
+summary(reg.s)
+```
+
+
+La p-valeur de  β1  est inférieure à  2×10−16 , ce qui indique que  β1  est non nul.
+La p-valeur de  β0  est inférieure à  2×10−16 , ce qui indique que  β0  est non nul, ce qui signifie qu'on rejette  H0  à tous les niveaux habituels.Donc le modèle est globalement significative.
+En analysant le F-statistic:  2713 on 1 and 4175 DF,  p-value: < 2.2e-16,la p-value est inferieur à 5% donc on rejette l'hypothèse nulle de nullété simultanée des coefficients de la régresion réalisée.
+De plus le R-squared et le Adjusted R-squared sont respectivement 0.3938 et 0.3937 ,cette valeur est moyenne  et  acceptable au point de vu statistique et signifie  qu'on peut expliquer la variable Rings à peu près à 40% à partir de la variable Shell .
+
+#L'analyse des residus:
+
+Analyse de la normalté:
+
+```{r}
+h=hist(resid(reg.s),col = "grey",freq=F,main = " ")
+h
+```
+
+D'après le graphe (l'histogramme) on constate qu'elle ne suit pas une loi normale.
+Pour plus de précision on regarde les graphe suivants:
+
+
+```{r}
+plot(reg.s)
+```
+
+  On constate l’hétéroscédasticité au vu du premier graphique, hypothèse gaussienne
+est un peu remise  en cause par le QQ-plot car tout au depart on remarque que l'ajustement est bon par rapport à la droite de regression ,mais à la fin on constate un grand  éloignement des points .Donc la normalité semble etre rejetter d'après le graphe.
+
+Analyse de l'homoscédasticité pour plus de précision:
+
+```{r}
+#bptest(reg.s,data = abalone)
+```
+
+ 
+Analyse non auto-corrélation:
+
+```{r}
+
+acf(residuals(reg.s), main="reg.s",ci=0.99)
+```
+
+Le lag plot montre clairement que les résidus sont auto-corrélés, puisque le coefficient de corrélation dépasse la borne supérieure de l’intervalle de confiance du coefficient de corrélation de valeur nulle.
+
+#                              Modèle log
+On considère ce modèle qui nous donne les résultats suivants:
+
+
+```{r}
+mod_reg.s <- lm(log(Rings) ~ Shell, data = abalone)
+plot(mod_reg.s)
+hist(resid(mod_reg.s),col = "grey")
+
+
+```
+
+Par analyse des graphes : pas de structure dans le premier graphique ni dans
+le troisième,hétéroscédasticité est maintenu au vu du premier graphique, hypothèse gaussienne
+non remise en cause par le QQ-plot.
+
+Avec ce nouveau model qui est fait à partir du log , ce-ci semble etre un bon model en analysant nos graphes et de plus l'histogramme nous montre que le bruit semble suivre une loi normale et de plus l'ajustement des points sur la droite semble encore plus correcte .
+
+ 
+```{r}
+#bptest(mod_reg.s,data = abalone)
+
+```
+
+
+ Représentation de l’autocorrélation des résidus .
+
+```{r}
+acf(residuals(mod_reg.s),ci=0.99)
+```
+
+Le lag plot montre clairement que les résidus sont auto-corrélés, puisque le coefficient de corrélation dépasse la borne supérieure de l’intervalle de confiance du coefficient de corrélation de valeur nulle.
+
+
+
+
+
+
+```{r}
+residus <- rstudent(reg.s)
+n <- length(abalone$Rings)
+plot(1:n, residus,
+  pch = 16, xlab = "Index", ylab = "Residus studentises",
+  main = "Valeurs aberrantes")
+abline(-2, 0)
+abline(2, 0, lty = 2)
+IDval.ab <- (1:n)[abs(residus) > 2]
+text(IDval.ab, residus[IDval.ab], IDval.ab, pos = 4, col = "blue")
+# length(IDval.ab)
+```
+
+on observe 229 points aberrants avec la taille de notre echantillon qui est egale a 4177 observations.ce qui est acceptable statistiquement,et la division de 229 par 4177 donne 0.055 donc pas mal.
+
+#Valeurs aberrantes:
+le graphe de la regression avec les valeurs aberrantes:
+
+```{r}
+
+
+plot(abalone$Shell, abalone$Rings,
+  xlab = "Shell", ylab = "Rings",
+  main = "Donnees avec valeurs aberrantes"
+)
+abline(coef(reg.s), col = "green")
+points(abalone$Shell[IDval.ab], abalone$Rings[IDval.ab], col = "blue", pch = 16)
+text(abalone$Shell[IDval.ab], abalone$Shell[IDval.ab], IDval.ab, pos = 4, col = "blue")
+```
+
+
+
+```{r}
+par(mfrow = c(2, 2))
+residus.std <- rstandard(reg.s)
+plot(1:n, reg.s$residuals, main = "Residus", xlab = "Index", ylab = "Residus")
+points(1:n, residus.std, pch = 4, col = "blue")
+points(1:n, residus, pch = 5, col = "red")
+legend(90, 45, c("estime", "standardise", "studentise"),
+  col = c("black", "yellow", "red"), pch = c(1, 4, 5)
+)
+
+plot(1:n, residus.std,
+  pch = 4, col = "blue", main = "Residus.std", xlab = "Index",
+  ylab = "Residus"
+)
+points(1:n, residus, col = "red")
+legend(1000, 6, c("std", "sts"), col = c("blue", "red"), pch = c(4, 1))
+```
+
+Pour le premier graphe:On voit que les résidus esitmés ne sont pas du tout à la même échelle puisqu'ils ne sont pas standardisés.Afin de mieux comparer les résidus standardisés aux résidus studentisés.
+
+Pour le second graphe:Nous voyons que pour tous les points les deux résidus sont  identiques
+
+
+```{r}
+levier <- hatvalues(reg.s)
+plot(1:n, levier, xlab = "Index", ylab = "Poids h_ii", main = "Points leviers")
+p <- reg.s$rank
+seuil1 <- 2 * p / n
+seuil2 <- 3 * p / n
+abline(seuil1, 0, lty = 2)
+abline(seuil2, 0, lty = 3)
+IDlev <- (1:n)[levier > seuil2]
+Idlev <- (1:n)[levier > seuil1 & levier < seuil2]
+text(IDlev, levier[IDlev], IDlev, pos = 4, col = "blue")
+# length(IDlev)
+# length(Idlev)
+```
+
+
+
+Les données contiennent 91 observations de points leviers, leurs poids est au-dessus du deuxième seuil. De plus, il y a 129 autres observations dont le poids est légèrement élevés.
+
+Notre graphe avec les valeurs aberrantes et points leviers et de la distance Cook:
+
+```{r}
+plot(abalone$Shell, abalone$Rings,
+  xlab = "shell", ylab = "Rings",
+  main = "Donnees avec v. aberrantes et pts. leviers"
+)
+abline(coef(reg.s), col = "green")
+points(abalone$Shell[IDval.ab], abalone$Rings[IDval.ab], col = "blue", pch = 16)
+text(abalone$Shell[IDval.ab], abalone$Rings[IDval.ab], pos = 4, col = "blue")
+points(abalone$Shell[IDlev], abalone$Rings[IDlev], col = "red", pch = 16)
+text(abalone$Shell[IDlev], abalone$Rings[IDlev], IDlev, pos = 4, col = "red")
+legend(0.2, 30, c("aberrante", "levier"), col = c("blue", "red"), pch = 16)
+
+cook <- cooks.distance(reg.s)
+plot(1:n, cook,
+  xlab = "Index", ylab = "Distance de Cook", main = "Distance de Cook",
+  ylim = c(0, .15)
+)
+s1 <- qf(0.5, p, n - p)
+s2 <- qf(0.1, p, n - p)
+abline(s2, 0, lty = 2)
+abline(s1, 0, lty = 3)
+```
+
+On a aucun point suspect selon le critère de la distance de Cook.(leur distance de cook ne sont pas important)
+
+#Intervalle de confiance et de prediction
+
+```{r}
+Shell_tri <- data.frame(Shell = sort(abalone$Shell))
+# class(Shell_tri)
+int.pre <- predict(reg.s, Shell_tri, interval = "pre")
+int.conf <- predict(reg.s, Shell_tri, interval = "conf")
+```
+
+
+```{r}
+plot(abalone$Shell, abalone$Rings,
+  xlab = "Shell", ylab = "Rings",
+  main = "Intervalles de confiance et de prediction"
+)
+abline(reg.s)
+lines(Shell_tri$Shell, int.conf[, 2], lty = 2, col = "red")
+lines(Shell_tri$Shell, int.conf[, 3], lty = 2, col = "red")
+lines(Shell_tri$Shell, int.pre[, 2], lty = 3, col = "blue")
+lines(Shell_tri$Shell, int.pre[, 3], lty = 3, col = "blue")
+legend(0.0, 30, c("confiance", "prediction"), lty = c(2, 3), col = c("red", "blue"))
+```
+
+On observe que les intervalles de confiance sont bien plus étroits que les intervalles de prédiction. Les deux types d'intervalles sont plus étroits dans la zone autour de Shell=0.2 où la plupart des observations de Shell(poids de la coquille) s'accumulent. Plus qu'on s'éloigne 0.2 gramme, plus les intervalles sont larges. Ce phénomène est normal et comprehensible, car on a plus de certitude dans une zone avec beaucoup d'observations que dans une zone avec peu de points observés.
+
+Ajoutons les points atypiques:
+
+```{r}
+plot(abalone$Shell, abalone$Rings,
+  xlab = "Shell", ylab = "Rings",
+  main = "Intervalles de confiance et de prediction"
+)
+abline(coef(reg.s), col = "green")
+lines(Shell_tri$Shell, int.conf[, 2], lty = 2, col = "red")
+lines(Shell_tri$Shell, int.conf[, 3], lty = 2, col = "red")
+lines(Shell_tri$Shell, int.pre[, 2], lty = 3, col = "gold")
+lines(Shell_tri$Shell, int.pre[, 3], lty = 3, col = "gold")
+legend(0.0, 30, c("confiance", "prediction"), lty = c(2, 3), col = c("red", "blue"))
+
+
+points(abalone$Shell[IDval.ab], abalone$Rings[IDval.ab], col = "blue", pch = 16)
+text(abalone$Shell[IDval.ab], abalone$Rings[IDval.ab], pos = 4, col = "blue")
+points(abalone$Shell[IDlev], abalone$Rings[IDlev], col = "red", pch = 16)
+text(abalone$Shell[IDlev], abalone$Rings[IDlev], IDlev, pos = 4, col = "red")
+legend(0.25, 30, c("aberrante", "levier"), col = c("blue", "red"), pch = 16)
+```
+
+On voit que les valeurs aberrantes sont les points en dehors de l'intervalle de prédiction.les points leviers dans l'intervalle de confiance.  Donc ils sont des points qui correspondent bien au modèle.
+
+#Regression lineaire multiple 
+
+Avant de commencer notre  régression lineaire multiple ,puisqu'on  avait  constaté que dans la distribution des differentes categories de toutes  nos variables ,celle-ci  etait presque simulaire pour la categorie M (Male) et F (Femelle) donc on va introduire une autre variable qualitative (Infant) dans notre jeu de données qui sera de sorte que si la catégorie est Infant ça retourne 1(Infant ) on notera I si non 0 (Non Infant ) on notera NI :  
+
+
+```{r}
+abalone["Infant"] <- ifelse(abalone$X.Sex == "I", "I", "NI")
+abalone$Infant <- as.factor(abalone$Infant)
+abalone$X.Sex <- as.factor(abalone$X.Sex)
+head(abalone)
+```
+
+En considerant tout nos variables on obtient :
+
+```{r}
+mod1 <- lm(Rings ~ Whole + Length + Diam + Shucked + Height + Viscera + Shell + Infant, data = abalone)
+mod1
+#summary(mod1)
+
+```
+
+On fait une selection de variables par la méthode descendante (backward stepwise selection):
+
+
+```{r}
+step(mod1,direction = "backward")
+```
+D'après notre méthode de sélection de variable on obtient le modèle suivant:
+
+```{r}
+mod<-lm(Rings~Whole+Diam+Shucked+Height+Viscera+Shell+Infant,data = abalone)
+summary(mod)
+plot(mod)
+hist(resid(mod),col = "red")
+#bptest(mod1,data = abalone)
+acf(residuals(mod))
+
+```
+
+
+Le test de Fisher global est significatif ,on constate que le test de nullité des coefficients est significatif pour toutes nos variables,on rejette l'hypothèse nulle de nullété simultanée des coefficients de la régresion réalisée .
+Donc pour le model choisit on a un R-squared qui est 0.537 qui est moyenne, donc ce model est un peu robiste pour predire l'anneau,et dans ce cas cette variable  peut etre expliqué à 53% à partir des variables introduites dans notre model choisit  .
+
+Le lag plot nous montre clairement que les résidus sont auto-corrélés, puisque le coefficient de corrélation dépasse la borne supérieure de l’intervalle de confiance du coefficient de corrélation de valeur nulle.
+
+  On constate l’hétéroscédasticité au vu de nos graphes, hypothèse gaussienne
+est un peu remise  en cause par le QQ-plot car tout au depart on remarque que l'ajustement est bon par rapport à la droite de regression ,mais à la fin on constate un grand  éloignement des points .
+
+De plus l'histogramme nous montre le bruit semble ne pas suivre pas une loi normale.
+
+#                         Modèle log
+On considère ce modèle qui nous donne les résultats suivants:
+
+
+
+```{r}
+mod2 <- lm(log(Rings) ~ X.Sex + Whole + Length + Diam + Shucked + Height + Viscera + Shell, data = abalone)
+plot(mod2)
+hist(resid(mod2),col = "red")
+#bptest(mod2,data = abalone)
+acf(residuals(mod2))
+```
+
+Pour ce modele:
+
+Toutes les hypothèses semblent vérifiées : pas de structure dans le premier graphique ni dans
+le troisième,hétéroscédasticité est maintenu au vu du premier graphique, hypothèse gaussienne
+non remise en cause par le QQ-plot.
+
+Avec le nouveau model qui est fait à partir du log , ce-ci semble etre un bon model en analysant nos graphes et de plus l'histogramme nous montre que le bruit semble suivre une loi normale, l'ajustement des points sur la droite semble encore plus correcte .
+
+
+
+
+#Valeurs aberrantes
+
+```{r}
+
+
+residu.std <- rstudent(mod2)
+n <- length(abalone$Rings)
+plot(1:n, residu.std,
+  pch = 16, xlab = "Index", ylab = "Residus studentises",
+  main = "Valeurs aberrantes"
+)
+abline(-2, 0)
+abline(2, 0, lty = 2)
+IDval.ab <- (1:n)[abs(residu.std) > 2]
+text(IDval.ab, residu.std[IDval.ab], IDval.ab, pos = 4, col = "blue")
+# length(IDval.ab)
+```
+
+on observe 251 points aberrants avec la taille de notre echantillon qui est egale a 4177 observations.ce qui est acceptable statistiquement,et la division de 251 par 4177 donne 0.060 donc pas mal.
+
+le graphe de la regression avec les valeurs aberrantes trouvées:
+
+```{r}
+
+plot(abalone$Whole + abalone$Diam + abalone$Shucked + abalone$Height + abalone$Viscera + abalone$Shell, abalone$Rings,
+  xlab = "abalone$Whole+abalone$Diam+abalone$Shucked+abalone$Height+abalone$Viscera+abalone$Shell", ylab = "Rings",
+  main = "Donnees avec valeurs aberrantes"
+)
+abline(0, coef(mod2), col = "green")
+points((abalone$Whole + abalone$Diam + abalone$Shucked + abalone$Height + abalone$Viscera + abalone$Shell)[IDval.ab], abalone$Rings[IDval.ab], col = "blue", pch = 16)
+text((abalone$Whole + abalone$Diam + abalone$Shucked + abalone$Height + abalone$Viscera + abalone$Shell)[IDval.ab], abalone$Shell[IDval.ab], IDval.ab, pos = 4, col = "blue")
+```
+
+
+```{r}
+residu.std <- rstandard(mod)
+plot(1:n, mod$residuals, main = "Residus", xlab = "Index", ylab = "Residus")
+points(1:n, residu.std, pch = 4, col = "blue")
+points(1:n, residu.std, pch = 5, col = "red")
+legend(90, 45, c("estime", "standardise", "studentise"),
+  col = c("black", "yellow", "red"), pch = c(1, 4, 5)
+)
+```
+
+On voit que les résidus esitmés ne sont pas du tout à la même échelle puisqu'ils ne sont pas standardisés.Afin de mieux comparer les résidus standardisés aux résidus studentisés, on considère le graphique suivant.
+
+
+```{r}
+plot(1:n, residu.std,
+  pch = 4, col = "blue", main = "Residu", xlab = "Index",
+  ylab = "Residu"
+)
+points(1:n, residu.std, col = "red")
+legend(1000, 6, c("standardise", "studentise"), col = c("blue", "red"), pch = c(4, 1))
+```
+
+Nous voyons que pour tous les points les deux résidus  sont  identiques.
+
+#Levier
+
+
+```{r}
+leviers <- hatvalues(mod2)
+plot(1:n, leviers, xlab = "Index", ylab = "Poids h_ii", main = "Points leviers")
+p <- mod2$rank
+seuil01 <- 2 * p / n
+seuil02 <- 3 * p / n
+abline(seuil01, 0, lty = 2)
+abline(seuil02, 0, lty = 3)
+IDle <- (1:n)[leviers > seuil02]
+Idle <- (1:n)[leviers > seuil01 & leviers < seuil02]
+text(IDle, leviers[IDle], IDle, pos = 4, col = "blue")
+# length(IDle)
+# length(Idle)
+```
+
+Les données contiennent 140 observations qui sont leviers, leurs poids est au-dessus du deuxième seuil. De plus, il y a 137 autres observations dont le poids est légèrement élevés.
+
+le graphe de la regression avec les valeurs aberrantes et points leviers 
+
+```{r}
+par(mfrow = c(2, 2))
+plot(abalone$Whole + abalone$Diam + abalone$Shucked + abalone$Height + abalone$Viscera + abalone$Shell, abalone$Rings,
+  xlab = "x", ylab = "Rings",
+  main = "Donnees avec v. aberrantes et p.ts leviers"
+)
+abline(0, coef(mod2), col = "green")
+points((abalone$Whole + abalone$Diam + abalone$Shucked + abalone$Height + abalone$Viscera + abalone$Shell)[IDval.ab], abalone$Rings[IDval.ab], col = "blue", pch = 16)
+text((abalone$Whole + abalone$Diam + abalone$Shucked + abalone$Height + abalone$Viscera + abalone$Shell)[IDval.ab], abalone$Rings[IDval.ab], pos = 4, col = "blue")
+points((abalone$Whole + abalone$Diam + abalone$Shucked + abalone$Height + abalone$Viscera + abalone$Shell)[IDlev], abalone$Rings[IDlev], col = "red", pch = 16)
+text((abalone$Whole + abalone$Diam + abalone$Shucked + abalone$Height + abalone$Viscera + abalone$Shell)[IDlev], abalone$Rings[IDlev], IDlev, pos = 4, col = "red")
+legend(0.2, 30, c("aberrante", "levier"), col = c("blue", "red"), pch = 16)
+
+cook1 <- cooks.distance(mod2)
+plot(1:n, cook1,
+  xlab = "Index", ylab = "Distance de Cook", main = "Distance de Cook",
+  ylim = c(0, .15)
+)
+s01 <- qf(0.05, p, n - p)
+s02 <- qf(0.1, p, n - p)
+abline(s02, 0, lty = 2)
+abline(s01, 0, lty = 3)
+
+quan.t <- qt((1:n) / n, n - p - 1)
+plot(quan.t, sort(residu.std),
+  xlab = "Student T(n-p-1)",
+  ylab = "Quantiles empiriques des residus", main = "QQ-plot des residus"
+)
+abline(0, 1, col = "blue")
+```
+
+
+
+D'après les graphiques ci-desssus, aucun point ne possède de distance de Cook élevée donc acceptable. De plus le qqplot des résidus studendisées contre les quantiles d'une loi de Student de degrés de liberté  n−p−1  semble un peu raisonnable. Ainsi on peut considérer que l'ajustement du model est correct.
+
+
+
+
+  
+#ANOVA
+Affichons le jeu données contenant juste la variable à predire et les variables qualitatives.
+
+```{r}
+Ormeau <- abalone[, c("Rings", "X.Sex", "Infant")]
+head(Ormeau)
+```
+
+
+
+```{r}
+table(Ormeau$X.Sex)
+table(Ormeau$Infant)
+```
+
+On constate que le plan d'expérience est non équilibré en chaque variable ,pour la variable categorielle X.Sex on 1307 de categorie F,1342 de I et 1528 de M,pour la variable categorielle Infant on a 1342 de categorie I et 2835 de NI
+
+```{r}
+boxplot(Rings ~ X.Sex, data = Ormeau, xlab = " X.Sex")
+```
+
+On observe des différences entre les boxplots. la categorie M et F semblent similaire  et beaucoup plus favorisé en nombre d'anneaux que la categorie I.
+On observe également plusieurs points atypiques au dessus du max de tous nos trois boxplots et juste un en dessous du boxplot de la categorie I et deux en dessous de la categorie M.
+Voyons si les différences sont significatives:
+
+```{r}
+model1 <- lm(Rings ~ X.Sex, data = Ormeau)
+summary(model1)
+```
+
+Effectivement toutes les variables sont significatives et le test de nullité des constantes est bien significatif, leur p valeurs sont tous très inferieur au seuil de significativité . 
+
+```{r}
+anova((model1))
+```
+
+le resultat du test nous montre que le Sex a effectivement une influence sur le Rings.
+Le p valeur étant nettement plus petit .(p valeur tres petite)
+
+```{r}
+boxplot(Rings ~ Infant, data = Ormeau, xlab = "Infant")
+```
+
+On observe une différence entre les deux boxplots. la categorie NonInfant est plus favorisé en nombre d'anneaux que la categorie Infant. Voyons si les différences sont significatives:
+
+
+```{r}
+model2 <- lm(Rings ~ Infant, data = Ormeau)
+summary(model2)
+```
+
+
+Dans ce cas aussi toutes les variables sont significatives et le test de nullité des constantes est bien significatif, leur p valeurs sont tous très inferieur au seuil de significativité . 
+.
+
+```{r}
+anova(model2)
+```
+
+le resultat du test nous montre que la variable Infant( c'est-à-dire que l'ormeau soit Infant ou adulte) a effectivement une influence sur l'anneau.(p valeur tres petite)
+
+
+
+#Residus
+
+```{r}
+n <- nrow(Ormeau)
+res0 <- rstudent(model1)
+plot(1:n, res0)
+d_f <- data.frame(index = 1:n, res0 = res0)
+d_f <- data.frame(d_f, X.Sex = Ormeau$X.Sex)
+head(d_f)
+```
+
+```{r}
+par(mfrow = (c(2, 2)))
+plot(d_f[d_f$X.Sex == "M", ]$index, d_f[d_f$X.Sex == "M", ]$res0, main = "M", xlab = "Indice", ylab = "Résidus studentisés")
+plot(d_f[d_f$X.Sex == "F", ]$index, d_f[d_f$X.Sex == "F", ]$res0, main = "NI", xlab = "Indice", ylab = "Résidus studentisés")
+plot(d_f[d_f$X.Sex == "I", ]$index, d_f[d_f$X.Sex == "I", ]$res0, main = "I", xlab = "Indice", ylab = "Résidus studentisés")
+
+boxplot(res0 ~ X.Sex, d_f)
+```
+
+On constate que les residus sont presque similaire mais ceux de la categorie M est plus élevés comparés a la categorie I a son tour un peu éleve que pour la categorie F.
+ 
+```{r}
+
+res <- rstudent(model2)
+plot(1:n, res)
+df <- data.frame(index = 1:n, res = res)
+df <- data.frame(df, Infant = Ormeau$Infant)
+head(df)
+```
+
+
+
+
+```{r}
+
+
+par(mfrow = (c(2, 2)))
+plot(df[df$Infant == "I", ]$index, df[df$Infant == "I", ]$res, main = "I", xlab = "Indice", ylab = "Résidus studentisés")
+plot(df[df$Infant == "NI", ]$index, df[df$Infant == "NI", ]$res, main = "NI", xlab = "Indice", ylab = "Résidus studentisés")
+
+boxplot(res ~ Infant, df)
+```
+
+Les residus associés a la categorie I sont les plus élevés.
+# ANOVA a deux variables
+
+```{r}
+
+boxplot(Rings ~ Infant * X.Sex, data = abalone, xlab = " Infant/X.Sex")
+```
+
+
+```{r}
+model3 <- lm(Rings ~ Infant * X.Sex, data = abalone)
+anova(model3)
+```
+
+puisque les pvaleurs sont respectivements tres petits que le seuil de significativité 0.05 donc le test d'abscence d'effet est significatif et, le sex et etre infant ou non  semble y avoir des effets sur l'anneau.
+
+
+
+
+
+```{r}
+Y1 <- predict(reg.s, newdata = abalone)
+Y2 <- predict(mod2, newdata = abalone)
+```
+
+
+```{r}
+new_def <- data.frame("Rings" = c(abalone$Rings), "Rings preditent" = c(as.integer(as.numeric(Y2))), " age de abalone" = c(as.integer(as.numeric(abalone$Rings + 1.5))), "age abalone predit" = c(as.integer(as.numeric(Y2 + 1.5))))
+head(new_def)
+```
+
+#                          Conclusion
+L'objectif de ce Projet était de Prédire l'âge de l'ormeau à partir de ses mesures physiques.
+Puisque son âge est déterminé à partir de ses anneaux,lors de nos différentes études on a constaté qu'il y avait effectivement une bonne corrélation entre l'anneau et chaccun de ses differentes mesures physiques et une très bonne corrélation entre les differentes mesures.
+Donc pour predire l'anneau, differents modeles ont été proposés a savoir la regression simple avec la variable explicative shell(bonne correlation avec la variable a predire) et la regression multiple dont beaucoup de modeles ont ete proposes(modele1,2,3,4) dont le modele 2 est meilleur.et de plus une analyse variance  nous a montré que les variables categorielles qui était (Male ,Femelle et Infant) avaient aussi une influence sur les anneaux.
+
+
+
+
+```{r pressure, echo=FALSE}
+
+```
+
+
