@@ -1,0 +1,218 @@
+---
+title: "Nano"
+author: "KANE SEYDOU"
+date: "11/12/2020"
+output: html_document
+---
+
+
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+
+
+```{r}
+
+f_sim<-function(df,M) {
+      df<-subset(df,!is.na(df))
+      X_i<-NULL
+      y<-NULL
+      simulation<-function(){
+      for (i in 1:length(df) ) { 
+              X_i[i] <- rnorm (1,
+                             df[i],
+                             2.01)
+      }
+      return (X_i)
+}
+Y<-replicate(M,simulation())
+M_<-data.frame (Y)
+for (i in 1:length(M_)) {
+  y[i]<-median(M_[,i])
+}
+return (y)
+}
+
+Estimation_<-function(x){
+    moyenne_<-mean(x)
+    e_c<-sqrt(var(x))
+    #q.ech<-x[0.95*length(x)]
+    born_inf<-quantile(x,probs = 0.025)
+    born_sup<-quantile(x,probs = 0.975)
+    M<-matrix(c(moyenne_,
+                e_c,
+                born_inf,
+                born_sup))
+  
+  
+  return (M)
+}
+
+```
+
+
+```{r}
+library(xlsx)
+df<-df_Tio2<- read.xlsx(file.choose(), head= TRUE, sheetIndex=1)
+head(df)
+```
+
+
+```{r}
+M<-1e3
+df1 <-df[,1]
+y1<-f_sim(df1,M)
+Me1<- Estimation_(y1) 
+colnames(Me1)<- "TiO2Diametre1"
+rownames(Me1)<-c("Moyenne_mediane",
+                 "Ecart_type",
+                 " born_inf", 
+                 " born_sup")
+Me1<-data.frame(Me1)
+df2 <- df[,2]
+y2<-f_sim(df2,M)
+Me2<- Estimation_(y2) 
+colnames(Me2)<- "TiO2Diametre2"
+rownames(Me2)<-c("Moyenne_mediane",
+                 "Ecart_type",
+                 " born_inf", 
+                 " born_sup")
+Me2<-data.frame(Me2)
+df3 <-df[,3]
+y3<-f_sim(df3,M)
+Me3<-Estimation_(y3) 
+colnames(Me3)<- "TiO2Diametre3"
+rownames(Me3)<-c("Moyenne_mediane",
+                 "Ecart_type",
+                 " born_inf", 
+                 " born_sup")
+Me3<-data.frame(Me3)
+
+recap<-cbind(Me1,Me2,Me3)
+recap
+
+df4 <-df[,4]
+y4<-f_sim(df4,M)
+Me4<- Estimation_(y4) 
+colnames(Me4)<- "TiO2FeretMin1"
+rownames(Me4)<-c("Moyenne_mediane",
+                 "Ecart_type",
+                 " born_inf", 
+                 " born_sup")
+Me4<-data.frame(Me4)
+df5 <- df[,5]
+y5<-f_sim(df5,M)
+Me5<- Estimation_(y5) 
+colnames(Me5)<- "TiO2FeretMin5"
+rownames(Me5)<-c("Moyenne_mediane",
+                 "Ecart_type",
+                 " born_inf", 
+                 " born_sup")
+Me5<-data.frame(Me5)
+df6 <-df[,6]
+y6<-f_sim(df6,M)
+Me6<-Estimation_(y6) 
+colnames(Me6)<- "TiO2FeretMin6"
+rownames(Me6)<-c("Moyenne_mediane",
+                 "Ecart_type",
+                 " born_inf", 
+                 " born_sup")
+Me6<-data.frame(Me6)
+
+recap_<-cbind(Me4,Me5,Me6)
+recap_
+```
+
+
+```{r}
+
+f1<-ecdf(df$TiO2Diametre1)
+f2<-ecdf(df$TiO2Diametre2)
+f3<-ecdf(df$TiO2Diametre3)
+plot(f1, col= "red", main=NA, xlab= "Médiane (nm)")
+plot(f2, col="blue", add=T)
+plot(f3, col=" grey", add=T)
+abline( v=recap[1,1],h=0.5 , col= "red", lty=1, lwd=2)
+abline( v=recap[1,2], h=0.5  , col= "blue",lty=2, lwd=2)
+abline( v= recap[1,3], h=0.5   , col= "grey")
+legend('right', c('Tio2Diametre1', 'Tio2Diametre2', 'Tio2Diametre3'), fill=c("red", "blue", " grey" ), border=NA)
+
+
+f4<-ecdf(df$TiO2FeretMin1)
+f5<-ecdf(df$TiO2FeretMin2)
+f6<-ecdf(df$TiO2FeretMin3)
+plot(f4, col= "red", main=NA, xlab= "Médiane (nm)")
+plot(f5, col="blue", add=T)
+plot(f6, col="gold", add=T)
+abline( v=recap_[1,1],h=0.5 , col= "red", lty=1, lwd=2)
+abline( v=recap_[1,2], h=0.5  , col= "blue",lty=2, lwd=2)
+abline( v= recap_[1,3], h=0.5   , col= "gold")
+legend('right', c('Tio2FeretMin1', 'Tio2FeretMin2', 'Tio2FeretMin3'), fill=c("red", "blue", "gold" ), border=NA)
+
+
+
+```
+
+## Boostrap...
+
+
+```{r}
+
+Estim.boot<-function(X,B) {
+  X<-subset(X,!is.na(X))
+  nb.obs<-length(X)
+  estim.med<-rep(0,B)
+  for (i in 1:B){
+    ech.boot<-sample(X,nb.obs,replace = TRUE)
+    estim.med[i]<-median(ech.boot)
+    
+  }
+  Mediane_moyen<-mean(estim.med)
+  e_c1<-sqrt(var(estim.med))
+  e_c<-sqrt(var(estim.med)/nb.obs)
+  result<-c(Mediane_moyen,e_c)
+  names(result)<-c("moyenne des medianes","ecart-type")
+  return (result)
+  
+}
+
+Estim.boot(df[,1],1000)
+
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+```{r}
+```
+
+
+
+
+
+```{r pressure, echo=FALSE}
+
+```
+
